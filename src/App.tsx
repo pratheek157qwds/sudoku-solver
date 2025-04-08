@@ -5,6 +5,7 @@ import { SudokuBoard } from './components/SudokuBoard';
 import { createEmptyGrid, createEmptyOriginalFlags, solveSudoku } from './utils/sudokuSolver';
 import { preprocessImage } from './utils/imageProcessor';
 import { useSpring, animated } from 'react-spring';
+import { adSenseConfig } from './adsenseConfig'; // Import AdSense config
 
 function App() {
   const [grid, setGrid] = useState(createEmptyGrid());
@@ -13,6 +14,7 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Animation for the title
   const titleAnimation = useSpring({
@@ -164,12 +166,48 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-xl shadow-lg p-8">
-          <animated.h1 style={titleAnimation} className="text-3xl font-bold text-center mb-8 text-gray-800">
+          <animated.h1 style={titleAnimation} className="text-3xl font-bold text-center mb-8 text-green-600">
             Sudoku Solver
           </animated.h1>
+
+          <div className="mb-4">
+            <button onClick={() => setShowTutorial(!showTutorial)} className="text-blue-500 hover:text-blue-700">
+              How to Use
+            </button>
+          </div>
+
+          {showTutorial && (
+            <div className="bg-gray-100 border border-gray-300 rounded-md p-4 mb-8">
+              <h2 className="text-lg font-bold mb-2 text-green-600">Tutorial</h2>
+              <p>
+                This Sudoku solver allows you to solve puzzles in two ways:
+              </p>
+              <ul>
+                <li>
+                  <b className="text-red-600">Upload Image:</b>
+                  <ol>
+                    <li>Click the "Upload Image" button.</li>
+                    <li>Select a clear image of a Sudoku puzzle from your computer.</li>
+                    <li>The solver will attempt to recognize the numbers and populate the board.</li>
+                  </ol>
+                </li>
+                <li>
+                  <b className="text-red-600">Manual Input:</b>
+                  <ol>
+                    <li>Click on a cell in the board to select it.</li>
+                    <li>Type the number (1-9) you want to enter.</li>
+                    <li>You can use the Tab key to navigate between cells.</li>
+                  </ol>
+                </li>
+              </ul>
+              <p>
+                Once you have entered the puzzle, click the "Solve" button to find a solution.
+              </p>
+            </div>
+          )}
 
           <div className="mb-8">
             <SudokuBoard
@@ -183,7 +221,7 @@ function App() {
             <animated.button
               style={buttonAnimation}
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
               disabled={processing}
             >
               <Upload size={20} />
@@ -211,6 +249,15 @@ function App() {
             </animated.button>
           </div>
 
+          <div className="mt-4">
+            <ins className="adsbygoogle"
+              style={{ display: 'block' }}
+              data-ad-client={adSenseConfig.client}
+              data-ad-slot={adSenseConfig.slot}
+              data-ad-format="auto"
+              data-full-width-responsive="true"></ins>
+          </div>
+
           <input
             type="file"
             ref={fileInputRef}
@@ -223,7 +270,7 @@ function App() {
 
           {processing && (
             <animated.div style={processingAnimation} className="mt-4 text-center text-gray-600">
-              <div className="animate-spin rounded-full h-8 w-8 border-4 border-t-4 border-blue-500" />
+              <div className="animate-spin rounded-full h-8 w-8 border-4 border-t-4 border-green-500" />
               Processing image... Please wait.
             </animated.div>
           )}
