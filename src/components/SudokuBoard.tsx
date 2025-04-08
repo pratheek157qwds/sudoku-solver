@@ -11,7 +11,6 @@ export const SudokuBoard: React.FC<SudokuBoardProps> = ({ grid, onCellChange, is
   const cellRefs = useRef<HTMLDivElement[]>([]);
 
   useEffect(() => {
-    // Focus on the selected cell
     if (selectedCell) {
       const cellRef = cellRefs.current[selectedCell.row * 9 + selectedCell.col];
       if (cellRef) {
