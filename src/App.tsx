@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, RefreshCw, Upload } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { SudokuBoard } from './components/SudokuBoard';
 import { createEmptyGrid, createEmptyOriginalFlags, solveSudoku } from './utils/sudokuSolver';
 import { preprocessImage } from './utils/imageProcessor';
+import { useSpring, animated } from 'react-spring';
 
 function App() {
   const [grid, setGrid] = useState(createEmptyGrid());
@@ -12,6 +13,30 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Animation for the title
+  const titleAnimation = useSpring({
+    from: { opacity: 0, transform: 'translateY(20px)' },
+    to: { opacity: 1, transform: 'translateY(0px)' },
+    config: { duration: 500 },
+    delay: 200,
+  });
+
+  // Animation for the buttons
+  const buttonAnimation = useSpring({
+    from: { opacity: 0, transform: 'scale(0.9)' },
+    to: { opacity: 1, transform: 'scale(1)' },
+    config: { duration: 300 },
+    delay: 300,
+  });
+
+  // Animation for the processing image
+  const processingAnimation = useSpring({
+    from: { opacity: 0, transform: 'scale(0.8)' },
+    to: { opacity: 1, transform: 'scale(1)' },
+    config: { duration: 300 },
+    delay: 300,
+  });
 
   const handleCellChange = (row: number, col: number, value: number | null) => {
     const newGrid = grid.map((r) => [...r]);
@@ -142,9 +167,9 @@ function App() {
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-xl shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
+          <animated.h1 style={titleAnimation} className="text-3xl font-bold text-center mb-8 text-gray-800">
             Sudoku Solver
-          </h1>
+          </animated.h1>
 
           <div className="mb-8">
             <SudokuBoard
@@ -155,32 +180,35 @@ function App() {
           </div>
 
           <div className="flex flex-wrap gap-4 justify-center">
-            <button
+            <animated.button
+              style={buttonAnimation}
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
               disabled={processing}
             >
               <Upload size={20} />
               Upload Image
-            </button>
+            </animated.button>
 
-            <button
+            <animated.button
+              style={buttonAnimation}
               onClick={handleSolve}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
               disabled={processing}
             >
               <Camera size={20} />
               Solve
-            </button>
+            </animated.button>
 
-            <button
+            <animated.button
+              style={buttonAnimation}
               onClick={handleReset}
               className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
               disabled={processing}
             >
               <RefreshCw size={20} />
               Reset
-            </button>
+            </animated.button>
           </div>
 
           <input
@@ -194,9 +222,10 @@ function App() {
           <canvas ref={canvasRef} className="hidden" />
 
           {processing && (
-            <div className="mt-4 text-center text-gray-600">
+            <animated.div style={processingAnimation} className="mt-4 text-center text-gray-600">
+              <div className="animate-spin rounded-full h-8 w-8 border-4 border-t-4 border-blue-500" />
               Processing image... Please wait.
-            </div>
+            </animated.div>
           )}
 
           {error && (
