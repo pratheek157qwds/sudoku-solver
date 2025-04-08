@@ -22,7 +22,7 @@ This project implements a web application that allows users to solve Sudoku puzz
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com//sudoku-solver.git
+   git clone https://github.com/pratheek157qwds/sudoku-solver.git
    ```
 
 2. **Install dependencies:**
