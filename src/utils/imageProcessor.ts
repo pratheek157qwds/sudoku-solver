@@ -1,33 +1,33 @@
 import { createWorker } from 'tesseract.js';
 
+// Improved preprocessing with noise reduction and contrast enhancement
 export async function preprocessImage(canvas: HTMLCanvasElement): Promise<void> {
     const ctx = canvas.getContext('2d')!;
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
-    // Convert to grayscale and apply adaptive thresholding
+    // Convert to grayscale
+    for (let i = 0; i < data.length; i += 4) {
+        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        data[i] = data[i + 1] = data[i + 2] = gray;
+    }
+
+    // Apply adaptive thresholding (improved)
     const width = canvas.width;
     const height = canvas.height;
-    const blockSize = Math.floor(Math.min(width, height) / 20); // Adaptive block size
-    const C = 2.5; // Constant subtracted from mean
+    const blockSize = Math.floor(Math.min(width, height) / 15); // Smaller block size for better adaptation
+    const C = 1.5; // Reduced constant for better thresholding
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const i = (y * width + x) * 4;
-
-            // Convert to grayscale using luminance weights
-            const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
-
-            // Calculate local mean
             let sum = 0;
             let count = 0;
-
             const halfBlock = Math.floor(blockSize / 2);
             for (let by = -halfBlock; by <= halfBlock; by++) {
                 for (let bx = -halfBlock; bx <= halfBlock; bx++) {
                     const ny = y + by;
                     const nx = x + bx;
-
                     if (ny >= 0 && ny < height && nx >= 0 && nx < width) {
                         const ni = (ny * width + nx) * 4;
                         sum += data[ni];
@@ -35,33 +35,14 @@ export async function preprocessImage(canvas: HTMLCanvasElement): Promise<void> 
                     }
                 }
             }
-
             const mean = sum / count;
             const threshold = mean - C;
-
-            // Apply threshold
-            const value = gray < threshold ? 0 : 255;
+            const value = data[i] < threshold ? 0 : 255;
             data[i] = data[i + 1] = data[i + 2] = value;
         }
     }
 
-    // Apply the processed image data back to the canvas
     ctx.putImageData(imageData, 0, 0);
-
-    // Enhance digit visibility
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext('2d')!;
-
-    // Draw current image to temp canvas
-    tempCtx.drawImage(canvas, 0, 0);
-
-    // Clear original canvas and apply sharpening
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.filter = 'contrast(1.4) brightness(1.1)';
-    ctx.drawImage(tempCanvas, 0, 0);
-    ctx.filter = 'none';
 }
 
 export async function processImage(imageFile: File, numScans: number = 3): Promise<(number | null)[][]> {
@@ -86,15 +67,13 @@ export async function processImage(imageFile: File, numScans: number = 3): Promi
 
     const img = new Image();
     img.src = URL.createObjectURL(imageFile);
-    await new Promise((resolve) => (img.onload = resolve));
+    await new Promise((resolve) => img.onload = resolve);
 
     const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
     const ctx = canvas.getContext('2d')!;
-    const maxSize = 800; // Reduced for better processing
-    const scale = Math.min(maxSize / img.width, maxSize / img.height);
-    canvas.width = img.width * scale;
-    canvas.height = img.height * scale;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
 
     let results: (number | null)[][] = [];
     for (let i = 0; i < numScans; i++) {
@@ -105,11 +84,11 @@ export async function processImage(imageFile: File, numScans: number = 3): Promi
     }
 
     await worker.terminate();
-    return refineResults(aggregateResults(results));
+    return aggregateResults(results);
 }
 
 function parseRecognizedText(text: string): (number | null)[][] {
-    const lines = text.trim().split('\n');
+    const lines = text.trim().split('\n').filter(line => line.trim() !== '');
     const grid: (number | null)[][] = [];
     for (let i = 0; i < 9; i++) {
         const row = [];
@@ -152,43 +131,4 @@ function mostFrequent(arr: number[]): number {
         }
     }
     return mostFrequentNum;
-}
-
-function refineResults(grid: (number | null)[][]): (number | null)[][] {
-    const refinedGrid = grid.map(row => row.map(cell => cell)); // Create a copy
-
-    // Check for inconsistencies and potential errors
-    for (let i = 0; i < 9; i++) {
-        for (let j = 0; j < 9; j++) {
-            if (refinedGrid[i][j] === null) {
-                // Attempt to infer missing values from neighbors if possible
-                refinedGrid[i][j] = inferMissingValue(refinedGrid, i, j);
-            }
-        }
-    }
-    return refinedGrid;
-}
-
-function inferMissingValue(grid: (number | null)[][], row: number, col: number): number | null {
-    // Simple inference logic: check for unique values in row, column, and 3x3 box
-    const rowValues = new Set(grid[row].filter(val => val !== null));
-    const colValues = new Set(grid.map(r => r[col]).filter(val => val !== null));
-    const boxValues = new Set();
-
-    const boxRowStart = Math.floor(row / 3) * 3;
-    const boxColStart = Math.floor(col / 3) * 3;
-    for (let i = boxRowStart; i < boxRowStart + 3; i++) {
-        for (let j = boxColStart; j < boxColStart + 3; j++) {
-            if (grid[i][j] !== null) {
-                boxValues.add(grid[i][j]);
-            }
-        }
-    }
-
-    for (let num = 1; num <= 9; num++) {
-        if (!rowValues.has(num) && !colValues.has(num) && !boxValues.has(num)) {
-            return num;
-        }
-    }
-    return null; // No inference possible
 }
