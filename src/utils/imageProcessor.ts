@@ -1,31 +1,30 @@
 import { createWorker } from 'tesseract.js';
 
-// Improved preprocessing with noise reduction and contrast enhancement
+// Enhanced preprocessing
 export async function preprocessImage(canvas: HTMLCanvasElement): Promise<void> {
     const ctx = canvas.getContext('2d')!;
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
 
-    // Convert to grayscale
+    // 1. Grayscale Conversion
     for (let i = 0; i < data.length; i += 4) {
         const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
         data[i] = data[i + 1] = data[i + 2] = gray;
     }
 
-    // Apply adaptive thresholding (improved)
+    // 2. Adaptive Thresholding
     const width = canvas.width;
     const height = canvas.height;
-    const blockSize = Math.floor(Math.min(width, height) / 15); // Smaller block size for better adaptation
-    const C = 1.5; // Reduced constant for better thresholding
+    const blockSize = 10; // Adjust this value as needed
+    const C = 15; // Adjust this value as needed
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const i = (y * width + x) * 4;
             let sum = 0;
             let count = 0;
-            const halfBlock = Math.floor(blockSize / 2);
-            for (let by = -halfBlock; by <= halfBlock; by++) {
-                for (let bx = -halfBlock; bx <= halfBlock; bx++) {
+            for (let by = -blockSize; by <= blockSize; by++) {
+                for (let bx = -blockSize; bx <= blockSize; bx++) {
                     const ny = y + by;
                     const nx = x + bx;
                     if (ny >= 0 && ny < height && nx >= 0 && nx < width) {
@@ -42,7 +41,8 @@ export async function preprocessImage(canvas: HTMLCanvasElement): Promise<void> 
         }
     }
 
-    ctx.putImageData(imageData, 0, 0);
+    // 3. Put the processed image data back to the canvas
+    ctx.putImageData(imgData, 0, 0);
 }
 
 export async function processImage(imageFile: File, numScans: number = 3): Promise<(number | null)[][]> {
@@ -87,6 +87,7 @@ export async function processImage(imageFile: File, numScans: number = 3): Promi
     return aggregateResults(results);
 }
 
+// Improved parsing to handle noisy OCR output
 function parseRecognizedText(text: string): (number | null)[][] {
     const lines = text.trim().split('\n').filter(line => line.trim() !== '');
     const grid: (number | null)[][] = [];
