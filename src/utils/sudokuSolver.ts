@@ -1,15 +1,15 @@
 export function isValid(board: (number | null)[][], row: number, col: number, num: number): boolean {
-  // Check row
+  
   for (let x = 0; x < 9; x++) {
     if (board[row][x] === num) return false;
   }
 
-  // Check column
+  
   for (let x = 0; x < 9; x++) {
     if (board[x][col] === num) return false;
   }
 
-  // Check 3x3 box
+  
   const startRow = Math.floor(row / 3) * 3;
   const startCol = Math.floor(col / 3) * 3;
   for (let i = 0; i < 3; i++) {
