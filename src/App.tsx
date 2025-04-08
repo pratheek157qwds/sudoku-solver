@@ -16,7 +16,6 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
 
-  // Animation for the title
   const titleAnimation = useSpring({
     from: { opacity: 0, transform: 'translateY(20px)' },
     to: { opacity: 1, transform: 'translateY(0px)' },
@@ -24,7 +23,6 @@ function App() {
     delay: 200,
   });
 
-  // Animation for the buttons
   const buttonAnimation = useSpring({
     from: { opacity: 0, transform: 'scale(0.9)' },
     to: { opacity: 1, transform: 'scale(1)' },
@@ -32,7 +30,6 @@ function App() {
     delay: 300,
   });
 
-  // Animation for the processing image
   const processingAnimation = useSpring({
     from: { opacity: 0, transform: 'scale(0.8)' },
     to: { opacity: 1, transform: 'scale(1)' },
@@ -73,8 +70,8 @@ function App() {
 
       await worker.setParameters({
         tessedit_char_whitelist: '123456789',
-        tessedit_pageseg_mode: '10', // Treat as single character
-        tessedit_ocr_engine_mode: '2', // Use neural net mode
+        tessedit_pageseg_mode: '10',
+        tessedit_ocr_engine_mode: '2',
         tessjs_create_pdf: '0',
         tessjs_create_hocr: '0',
         tessjs_create_tsv: '0',
@@ -83,7 +80,6 @@ function App() {
         tessjs_create_osd: '0'
       });
       
-      // Load and process image
       const img = new Image();
       img.src = URL.createObjectURL(imageFile);
       await new Promise((resolve) => (img.onload = resolve));
@@ -91,25 +87,21 @@ function App() {
       const canvas = canvasRef.current!;
       const ctx = canvas.getContext('2d')!;
       
-      // Set canvas size to be proportional to image
-      const maxSize = 800; // Reduced for better processing
+      const maxSize = 800;
       const scale = Math.min(maxSize / img.width, maxSize / img.height);
       canvas.width = img.width * scale;
       canvas.height = img.height * scale;
       
-      // Draw and preprocess image
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       await preprocessImage(canvas);
 
-      // Calculate cell dimensions with padding
       const cellWidth = Math.floor(canvas.width / 9);
       const cellHeight = Math.floor(canvas.height / 9);
-      const padding = Math.floor(Math.min(cellWidth, cellHeight) * 0.1); // 10% padding
+      const padding = Math.floor(Math.min(cellWidth, cellHeight) * 0.1);
       
       const newGrid = createEmptyGrid();
       const newIsOriginal = createEmptyOriginalFlags();
       
-      // Process each cell individually
       for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
           const cellCanvas = document.createElement('canvas');
@@ -117,7 +109,6 @@ function App() {
           cellCanvas.height = cellHeight - (padding * 2);
           const cellCtx = cellCanvas.getContext('2d')!;
           
-          // Extract cell image with padding
           cellCtx.drawImage(
             canvas,
             col * cellWidth + padding,
@@ -130,11 +121,9 @@ function App() {
             cellHeight - (padding * 2)
           );
 
-          // Recognize digit in cell
           const result = await worker.recognize(cellCanvas);
           const text = result.data.text.trim();
           
-          // Check if recognized text is a valid digit
           if (/^[1-9]$/.test(text)) {
             const value = parseInt(text);
             newGrid[row][col] = value;
