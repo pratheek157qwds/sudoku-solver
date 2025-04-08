@@ -1,22 +1,19 @@
 import { createWorker } from 'tesseract.js';
 
-// Enhanced preprocessing
 export async function preprocessImage(canvas: HTMLCanvasElement): Promise<void> {
     const ctx = canvas.getContext('2d')!;
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imgData.data;
 
-    // 1. Grayscale Conversion
     for (let i = 0; i < data.length; i += 4) {
         const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
         data[i] = data[i + 1] = data[i + 2] = gray;
     }
 
-    // 2. Adaptive Thresholding
     const width = canvas.width;
     const height = canvas.height;
-    const blockSize = 10; // Adjust this value as needed
-    const C = 15; // Adjust this value as needed
+    const blockSize = 10;
+    const C = 15;
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
@@ -41,7 +38,6 @@ export async function preprocessImage(canvas: HTMLCanvasElement): Promise<void> 
         }
     }
 
-    // 3. Put the processed image data back to the canvas
     ctx.putImageData(imgData, 0, 0);
 }
 
@@ -55,8 +51,8 @@ export async function processImage(imageFile: File, numScans: number = 3): Promi
     await worker.initialize('eng');
     await worker.setParameters({
         tessedit_char_whitelist: '123456789',
-        tessedit_pageseg_mode: '10', // Treat as single character
-        tessedit_ocr_engine_mode: '2', // Use neural net mode
+        tessedit_pageseg_mode: '10',
+        tessedit_ocr_engine_mode: '2',
         tessjs_create_pdf: '0',
         tessjs_create_hocr: '0',
         tessjs_create_tsv: '0',
@@ -87,7 +83,6 @@ export async function processImage(imageFile: File, numScans: number = 3): Promi
     return aggregateResults(results);
 }
 
-// Improved parsing to handle noisy OCR output
 function parseRecognizedText(text: string): (number | null)[][] {
     const lines = text.trim().split('\n').filter(line => line.trim() !== '');
     const grid: (number | null)[][] = [];
